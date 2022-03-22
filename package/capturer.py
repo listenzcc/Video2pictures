@@ -35,20 +35,27 @@ class Capturer(object):
         info = _cap_info(cap)
 
         self.cap = cap
+
+        self.grabbed, self.frame = self.cap.read()
+
         self.info = info
 
         print('D: Capture is initialized: {}'.format(info))
 
     def get_frame(self, fno, cvtColor=cv2.COLOR_BGR2RGB):
         fno %= self.info['frames']
+        fno = int(fno)
 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, fno)
-        success, image = self.cap.read()
+        self.grabbed, self.frame = self.cap.read()
 
         if cvtColor is not None:
-            image = cv2.cvtColor(image, cvtColor)
+            self.frame = cv2.cvtColor(self.frame, cvtColor)
 
-        return image
+        return self.frame
+
+    # def stop(self):
+    #     self.stopped = True
 
     def release(self):
         self.cap.release()

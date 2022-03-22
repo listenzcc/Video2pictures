@@ -12,16 +12,14 @@ camera.set(3, 640)
 camera.set(4, 480)
 
 # %%
-# This shows an image the way it should be
-# cv2.namedWindow("w1", cv2.CV_WINDOW_AUTOSIZE)
-# retval, frame = camera.read()
-# if not color:
-#     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-# else:
-#     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+success, frame = camera.read()
+if not color:
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+else:
+    pass
 
-# cv2.flip(frame, 1, frame)  # mirror the image
-# cv2.imshow("w1", frame)
+cv2.flip(frame, 1, frame)  # mirror the image
+cv2.imshow("w1", frame)
 
 # %%
 # This shows an image weirdly...
