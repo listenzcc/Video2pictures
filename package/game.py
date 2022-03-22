@@ -1,5 +1,6 @@
 # %%
 import os
+import time
 import pygame
 import numpy as np
 
@@ -14,7 +15,7 @@ TIMER = Timer()
 
 file_path = Path(os.environ.get('home', None), 'Desktop', 'nba.mp4')
 CAPTURER = Capturer(file_path.as_posix())
-
+# CAPTURER.update_buffer()
 
 # %%
 pygame.display.set_caption(CAPTION)
@@ -82,6 +83,7 @@ fno1 = np.random.randint(0, 1000000)
 fno2 = np.random.randint(0, 1000000)
 lst = [_frame(fno1), _frame(fno2)]
 
+
 while True:
     if TIMER.check() * 10 < count:
         for event in pygame.event.get():
@@ -93,6 +95,8 @@ while True:
                 CAPTURER.release()
                 QUIT_PYGAME()
 
+        CAPTURER.skip = False
+
         if len(lst) < 2:
             fno1 = np.random.randint(0, 1000000)
             fno2 = np.random.randint(0, 1000000)
@@ -100,11 +104,12 @@ while True:
 
         continue
 
-    fno1, frame1 = lst.pop(0)
-    fno2, frame2 = lst.pop(0)
+    if len(lst) >= 2:
+        fno1, frame1 = lst.pop(0)
+        fno2, frame2 = lst.pop(0)
 
-    _draw_image(frame1, layout.get('left_patch'))
-    _draw_image(frame2, layout.get('right_patch'))
+        _draw_image(frame1, layout.get('left_patch'))
+        _draw_image(frame2, layout.get('right_patch'))
 
     pygame.display.update()
     TIMER.append([fno1, fno2])

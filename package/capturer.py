@@ -1,6 +1,7 @@
 # %%
 import cv2
 
+import numpy as np
 # %%
 
 
@@ -35,9 +36,6 @@ class Capturer(object):
         info = _cap_info(cap)
 
         self.cap = cap
-
-        self.grabbed, self.frame = self.cap.read()
-
         self.info = info
 
         print('D: Capture is initialized: {}'.format(info))
@@ -47,15 +45,13 @@ class Capturer(object):
         fno = int(fno)
 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, fno)
-        self.grabbed, self.frame = self.cap.read()
+        grabbed, frame = self.cap.read()
 
+        cv2.flip(frame, 1, frame)  # mirror the image
         if cvtColor is not None:
-            self.frame = cv2.cvtColor(self.frame, cvtColor)
+            frame = cv2.cvtColor(frame, cvtColor)
 
-        return self.frame
-
-    # def stop(self):
-    #     self.stopped = True
+        return frame
 
     def release(self):
         self.cap.release()
