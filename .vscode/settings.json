@@ -1,9 +1,11 @@
 {
     "cSpell.words": [
         "blit",
+        "dtype",
         "imshow",
         "plotly",
         "pygame",
-        "pyplot"
+        "pyplot",
+        "qsize"
     ]
 }
