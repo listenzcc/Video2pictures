@@ -15,7 +15,7 @@ TIMER = Timer()
 
 file_path = Path(os.environ.get('home', None), 'Desktop', 'nba.mp4')
 CAPTURER = Capturer(file_path.as_posix())
-# CAPTURER.update_buffer()
+CAPTURER.update_queue()
 
 # %%
 pygame.display.set_caption(CAPTION)
@@ -66,8 +66,9 @@ def _draw_message(msg, canvas=main_canvas, rect=layout.get('message_rect')):
 
 
 def _frame(fno):
-    image = CAPTURER.get_frame(fno)
-    frame = pygame.surfarray.make_surface(np.rot90(image))
+    # image = CAPTURER.get_frame(fno)
+    fno, image = CAPTURER.queue.get_nowait()
+    frame = pygame.surfarray.make_surface(image)
     return (fno, frame)
 
 
@@ -83,7 +84,6 @@ fno1 = np.random.randint(0, 1000000)
 fno2 = np.random.randint(0, 1000000)
 lst = [_frame(fno1), _frame(fno2)]
 
-
 while True:
     if TIMER.check() * 10 < count:
         for event in pygame.event.get():
@@ -94,8 +94,6 @@ while True:
                 TIMER.save(folder='timings', contents_name=['fno1', 'fno2'])
                 CAPTURER.release()
                 QUIT_PYGAME()
-
-        CAPTURER.skip = False
 
         if len(lst) < 2:
             fno1 = np.random.randint(0, 1000000)

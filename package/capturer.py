@@ -1,6 +1,10 @@
 # %%
 import cv2
 
+import queue
+import threading
+import numpy as np
+
 # %%
 
 
@@ -36,6 +40,7 @@ class Capturer(object):
 
         self.cap = cap
         self.info = info
+        self.queue = queue.Queue(maxsize=100)
 
         print('D: Capture is initialized: {}'.format(info))
 
@@ -43,14 +48,33 @@ class Capturer(object):
         fno %= self.info['frames']
         fno = int(fno)
 
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, fno)
+        # self.cap.set(cv2.CAP_PROP_POS_FRAMES, fno)
         grabbed, frame = self.cap.read()
 
         cv2.flip(frame, 1, frame)  # mirror the image
         if cvtColor is not None:
             frame = cv2.cvtColor(frame, cvtColor)
 
+        frame = np.rot90(frame)
+
         return frame
+
+    def update_queue(self):
+        t = threading.Thread(target=self._update, args={}, daemon=True)
+        t.start()
+
+    def _update(self):
+        self.keep_update = True
+        while self.keep_update:
+            if self.queue.not_full:
+                try:
+                    fno = np.random.randint(0, 100000)
+                    frame = self.get_frame(fno)
+                    self.queue.put_nowait((fno, frame))
+                except queue.Full:
+                    continue
+                continue
+            pass
 
     def release(self):
         self.cap.release()
