@@ -2,10 +2,14 @@
     "cSpell.words": [
         "blit",
         "dtype",
+        "gethostbyname",
+        "imencode",
         "imshow",
+        "onstart",
         "plotly",
         "pygame",
         "pyplot",
-        "qsize"
+        "qsize",
+        "tobytes"
     ]
 }
