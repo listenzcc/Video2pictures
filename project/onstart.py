@@ -6,6 +6,8 @@ Purpose:
 '''
 
 # %%
+import sys
+import pygame
 import logging
 import configparser
 from pathlib import Path
@@ -22,6 +24,61 @@ CONFIG = dict(
 CFG = configparser.ConfigParser()
 CFG.read(CONFIG['assets_folder'].joinpath('configure.cfg'))
 CFG
+
+# %%
+CAPTION = CFG['UI']['caption']
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (100, 100, 100)
+
+pygame.init()
+FONT = pygame.font.Font(CFG['UI']['fontName'],
+                        int(CFG['UI']['fontSize']))
+
+
+def QUIT_PYGAME():
+    pygame.quit()
+    sys.exit()
+
+# %%
+
+
+def set_layout():
+    window_size = (1800, 900)
+    patch_size = (int(CFG['picture']['width']),
+                  int(CFG['picture']['height']))
+
+    center_patch = dict(
+        corner=(int(CFG['centerPatch']['cornerLeft']),
+                int(CFG['centerPatch']['cornerTop'])),
+        size=patch_size
+    )
+
+    left_patch = dict(
+        corner=(int(CFG['leftPatch']['cornerLeft']),
+                int(CFG['leftPatch']['cornerTop'])),
+        size=patch_size
+    )
+
+    right_patch = dict(
+        corner=(int(CFG['rightPatch']['cornerLeft']),
+                int(CFG['rightPatch']['cornerTop'])),
+        size=patch_size
+    )
+
+    message_rect = pygame.Rect((1000, 800, 500, 32))
+
+    return dict(
+        window_size=window_size,
+        center_patch=center_patch,
+        left_patch=left_patch,
+        right_patch=right_patch,
+        message_rect=message_rect
+    )
+
+
+LAYOUT = set_layout()
 
 # %%
 logger_kwargs = dict(

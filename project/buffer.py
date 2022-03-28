@@ -6,14 +6,19 @@ Purpose:
 '''
 
 # %%
+import cv2
+import numpy as np
 import queue
 import threading
 import socket
 
+from toolbox import _pic_decoder
 from onstart import CFG, LOGGER
 
 
 # %%
+def _default_img():
+    return np.random.randint(0, 255, size=(100, 200, 3), dtype=np.uint8)
 
 
 class Buffer(object):
@@ -21,7 +26,7 @@ class Buffer(object):
         self.queue = queue.Queue(maxsize=int(CFG['buffer']['maxSize']))
         LOGGER.info('Buffer initialized: {}'.format(self.queue.maxsize))
 
-    def append(self, pid, array):
+    def append(self, array, pid=-1):
         '''Append new item,
 
         Args:
@@ -32,11 +37,22 @@ class Buffer(object):
             - success, pid, array
         '''
 
-        if self.queue.not_full:
+        # if self.queue.not_full:
+        try:
             self.queue.put_nowait((pid, array))
             return True, pid, array
+        except queue.Full:
+            pass
+
         LOGGER.warning('Buffer is full: {}'.format(self.queue.maxsize))
+
         return False, pid, array
+
+    def get_nowait(self):
+        try:
+            return self.queue.get_nowait()
+        except queue.Empty:
+            return (-2, _default_img())
 
 
 BUFFER = Buffer()
@@ -45,6 +61,13 @@ BUFFER = Buffer()
 # %%
 def _bytes(buf, coding=CFG['TCP']['coding']):
     return bytes(buf, coding)
+
+
+def _append(body):
+    img = _pic_decoder(body)
+    if img is None:
+        return
+    BUFFER.append(np.rot90(img))
 
 
 class IncomeClient(object):
@@ -67,7 +90,7 @@ class IncomeClient(object):
                 if recv.startswith(b'image') and len(recv) > 15:
                     n_body = int.from_bytes(recv[5:15], 'little')
                     body = recv[15:]
-                    remain = n_body + 15 - 1024
+                    remain = n_body + 15 - len(recv)
                     print('New image received {}'.format(n_body))
                     while remain > 0:
                         recv = self.client.recv(min(remain, 1024))
@@ -79,7 +102,15 @@ class IncomeClient(object):
                             'Image transfer error, since the remain is less than 0 ({})'.format(remain))
                         continue
 
-                    print('Image received {}'.format(len(body)))
+                    print('Image received {}, {}'.format(len(body), remain))
+                    # print(_pic_decoder(body))
+
+                    # img = _pic_decoder(body)
+                    # BUFFER.append(np.rot90(img))
+
+                    t = threading.Thread(target=_append, args=(body,))
+                    t.start()
+
                     continue
 
             except ConnectionResetError:
@@ -92,7 +123,7 @@ class IncomeClient(object):
                     self.client, self.addr))
                 break
 
-            print('<<', recv)
+            # print('<<', recv)
 
         self.client.close()
         pass
@@ -101,11 +132,12 @@ class IncomeClient(object):
 class TCPServer(object):
     def __init__(self):
         self.start()
+        LOGGER.info('TCP initialized')
+        pass
 
+    def serve(self):
         t = threading.Thread(target=self.listen, args=(), daemon=True)
         t.start()
-
-        LOGGER.info('TCP initialized')
         pass
 
     def start(self):
@@ -137,9 +169,11 @@ class TCPServer(object):
             # client.close()
 
 
+SERVER = TCPServer()
+
 # %%
 if __name__ == '__main__':
-    SERVER = TCPServer()
+    SERVER.serve()
     input('Enter to escape.')
 
 # %%

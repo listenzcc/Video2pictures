@@ -11,11 +11,16 @@ import cv2
 import time
 import socket
 
+from tqdm.auto import tqdm
+
+from toolbox import _pic_encoder
 from pathlib import Path
-from onstart import CFG
+# from onstart import CFG
 
 # %%
 file_path = Path(os.environ.get('home', None), 'Desktop', 'nba.mp4')
+
+# !!! The CAPTURE is not closed well in the script.
 CAPTURE = cv2.VideoCapture(file_path.as_posix())
 
 
@@ -26,12 +31,11 @@ def _read_frame():
     return frame
 
 
-def _frame2bytes(frame, ext='.jpg'):
-    success, array = cv2.imencode(ext, frame)
-    return array.tobytes()
+def _frame2bytes(frame):
+    return _pic_encoder(frame)
 
 
-def _buff(body, n_length=10, byteorder='little'):
+def _mk_package(body, n_length=10, byteorder='little'):
     n = len(body)
 
     _header = [
@@ -55,7 +59,9 @@ def _buff(body, n_length=10, byteorder='little'):
 
 # %%
 serverHost = '100.1.1.108'
-serverHost = 'localhost'
+serverHost = '192.168.31.38'
+# serverHost = 'localhost'
+serverPort = 9386
 
 
 class TCPClient(object):
@@ -66,17 +72,19 @@ class TCPClient(object):
         self.socket = socket.socket()
 
         host = serverHost
-        port = int(CFG['TCP']['port'])
+        port = serverPort
 
         self.socket.connect((host, port))
         print(self.socket.recv(1024))
 
         self.socket.send(b'Client sent hello.')
 
-        buff = _buff(_frame2bytes(_read_frame()))
-        print(buff[:15])
-        print(int.from_bytes(buff[5:15], 'little'))
-        self.socket.send(buff)
+        # input('Enter to start')
+        for _ in tqdm(range(1000)):
+            buff = _mk_package(_frame2bytes(_read_frame()))
+            # print(buff[:15])
+            # print(int.from_bytes(buff[5:15], 'little'))
+            self.socket.send(buff)
 
         while True:
             inp = input('>> ')

@@ -7,6 +7,8 @@ import numpy as np
 # %%
 img = np.random.randint(0, 255, size=(10, 20, 3), dtype=np.uint8)
 
+
+# %%
 success, arr = cv2.imencode('.png', img)
 
 bytes = arr.tobytes()
