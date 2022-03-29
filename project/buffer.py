@@ -6,13 +6,12 @@ Purpose:
 '''
 
 # %%
-import cv2
 import numpy as np
 import queue
 import threading
 import socket
 
-from toolbox import _pic_decoder
+from toolbox import _pic_decoder, _bytes
 from onstart import CFG, LOGGER
 
 
@@ -26,27 +25,26 @@ class Buffer(object):
         self.queue = queue.Queue(maxsize=int(CFG['buffer']['maxSize']))
         LOGGER.info('Buffer initialized: {}'.format(self.queue.maxsize))
 
-    def append(self, array, pid=-1):
+    def append(self, array, uid=-1):
         '''Append new item,
 
         Args:
-            - pid: The ID of the picture;
+            - uid: The Unique ID of the image;
             - array: The width x height x 3 sized uint8 array as an array;
 
         Returns:
             - success, pid, array
         '''
 
-        # if self.queue.not_full:
         try:
-            self.queue.put_nowait((pid, array))
-            return True, pid, array
+            self.queue.put_nowait((uid, array))
+            return True, uid, array
         except queue.Full:
             pass
 
         LOGGER.warning('Buffer is full: {}'.format(self.queue.maxsize))
 
-        return False, pid, array
+        return False, uid, array
 
     def get_nowait(self):
         try:
@@ -59,121 +57,142 @@ BUFFER = Buffer()
 
 
 # %%
-def _bytes(buf, coding=CFG['TCP']['coding']):
-    return bytes(buf, coding)
 
 
-def _append(body):
-    img = _pic_decoder(body)
-    if img is None:
-        return
-    BUFFER.append(np.rot90(img))
+# def _append(uid, body):
+#     '''
+#     Append the bytes body into BUFFER,
+#     it will called by the threading on new image arrives.
+
+#     Args:
+#         - uid: The Unique ID of the image;
+#         - body: The bytes of an .png image;
+#     '''
+#     img = _pic_decoder(body)
+#     if img is None:
+#         return
+#     BUFFER.append(np.rot90(img), uid)
 
 
-class IncomeClient(object):
-    def __init__(self, client, addr):
-        self.client = client
-        self.addr = addr
+# class IncomeClient(object):
+#     '''
+#     Handle the income TCP client.
+#     '''
 
-        t = threading.Thread(target=self._hello, args=(), daemon=True)
-        t.start()
+#     def __init__(self, client, addr):
+#         self.client = client
+#         self.addr = addr
 
-        LOGGER.info('New client is received {}, {}'.format(client, addr))
-        pass
+#         t = threading.Thread(target=self._hello, args=(), daemon=True)
+#         t.start()
 
-    def _hello(self):
-        self.client.send(_bytes(CFG['TCP']['welcomeMessage']))
+#         LOGGER.info('New client is received {}, {}'.format(client, addr))
+#         pass
 
-        while True:
-            try:
-                recv = self.client.recv(1024)
-                if recv.startswith(b'image') and len(recv) > 15:
-                    n_body = int.from_bytes(recv[5:15], 'little')
-                    body = recv[15:]
-                    remain = n_body + 15 - len(recv)
-                    print('New image received {}'.format(n_body))
-                    while remain > 0:
-                        recv = self.client.recv(min(remain, 1024))
-                        body += recv
-                        remain -= len(recv)
+#     def _hello(self):
+#         self.client.send(_bytes(CFG['TCP']['welcomeMessage']))
 
-                    if remain < 0:
-                        LOGGER.error(
-                            'Image transfer error, since the remain is less than 0 ({})'.format(remain))
-                        continue
+#         while True:
+#             try:
+#                 recv = self.client.recv(1024)
 
-                    print('Image received {}, {}'.format(len(body), remain))
-                    # print(_pic_decoder(body))
+#                 if recv.startswith(b'image-s') and len(recv) > (7+16+16):
+#                     uid = int.from_bytes(recv[7:7+16], 'little')
+#                     n_body = int.from_bytes(recv[7+16:7+16+16], 'little')
+#                     body = recv[7+16+16:]
+#                     remain = n_body + 7+16+16 - len(recv)
+#                     print('New image received {}'.format(n_body))
 
-                    # img = _pic_decoder(body)
-                    # BUFFER.append(np.rot90(img))
+#                     while remain > 0:
+#                         recv = self.client.recv(min(remain, 1024))
+#                         body += recv
+#                         remain -= len(recv)
 
-                    t = threading.Thread(target=_append, args=(body,))
-                    t.start()
+#                     if remain < 0:
+#                         LOGGER.error(
+#                             'Image transfer error, since the remain is less than 0 ({})'.format(remain))
+#                         continue
 
-                    continue
+#                     print('Image received {}, {}'.format(len(body), remain))
+#                     t = threading.Thread(target=_append, args=(uid, body))
+#                     t.start()
 
-            except ConnectionResetError:
-                LOGGER.error('Connection reset {}, {}'.format(
-                    self.client, self.addr))
-                break
+#                     continue
 
-            if recv == b'':
-                LOGGER.error('Connection closed {}, {}'.format(
-                    self.client, self.addr))
-                break
+#             except ConnectionResetError:
+#                 LOGGER.error('Connection reset {}, {}'.format(
+#                     self.client, self.addr))
+#                 break
 
-            # print('<<', recv)
+#             if recv == b'':
+#                 LOGGER.error('Connection closed {}, {}'.format(
+#                     self.client, self.addr))
+#                 break
 
-        self.client.close()
-        pass
+#             # print('<<', recv)
 
-
-class TCPServer(object):
-    def __init__(self):
-        self.start()
-        LOGGER.info('TCP initialized')
-        pass
-
-    def serve(self):
-        t = threading.Thread(target=self.listen, args=(), daemon=True)
-        t.start()
-        pass
-
-    def start(self):
-        self.socket = socket.socket()
-
-        host = CFG['TCP']['host']
-        port = int(CFG['TCP']['port'])
-
-        self.socket.bind((host, port))
-
-        LOGGER.info('TCP serves on {}:{}'.format(host, port))
-
-    def listen(self):
-        listen = int(CFG['TCP']['listen'])
-        self.socket.listen(listen)
-
-        LOGGER.info('TCP listens: {}'.format(listen))
-
-        while True:
-            client, addr = self.socket.accept()
-            LOGGER.debug('New client: {}: {}'.format(client, addr))
-            client.send(_bytes(CFG['TCP']['welcomeMessage']))
-
-            IncomeClient(client, addr)
-
-            # print('>>', client.recv(1024))
-            # print('>>', client.recv(1024))
-
-            # client.close()
+#         self.client.close()
+#         pass
 
 
-SERVER = TCPServer()
+# class TCPServer(object):
+#     '''
+#     TCP Server
+#     '''
 
-# %%
-if __name__ == '__main__':
-    SERVER.serve()
-    input('Enter to escape.')
+#     def __init__(self):
+#         self.bind()
+#         LOGGER.info('TCP initialized')
+#         pass
 
-# %%
+#     def bind(self):
+#         '''
+#         Bind the host:port
+#         '''
+#         self.socket = socket.socket()
+
+#         host = CFG['TCP']['host']
+#         port = int(CFG['TCP']['port'])
+
+#         self.socket.bind((host, port))
+
+#         LOGGER.info('TCP binds on {}:{}'.format(host, port))
+
+#     def serve(self):
+#         '''
+#         Start the serving
+#         '''
+#         t = threading.Thread(target=self.listen, args=(), daemon=True)
+#         t.start()
+
+#         LOGGER.info('TCP servers on {}'.format(self.socket))
+
+#         pass
+
+#     def listen(self):
+#         listen = int(CFG['TCP']['listen'])
+#         self.socket.listen(listen)
+
+#         LOGGER.info('TCP listens: {}'.format(listen))
+
+#         # !!! It listens FOREVER
+#         # When new client connects,
+#         # it will be handled by the IncomeClient.
+#         while True:
+#             client, addr = self.socket.accept()
+#             LOGGER.debug('New client: {}: {}'.format(client, addr))
+#             client.send(_bytes(CFG['TCP']['welcomeMessage']))
+
+#             IncomeClient(client, addr)
+
+#             pass
+
+
+# SERVER = TCPServer()
+
+# # %%
+# if __name__ == '__main__':
+#     SERVER.serve()
+#     input('Enter to escape.')
+
+# # %%

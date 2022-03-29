@@ -28,10 +28,10 @@ WINDOW.fill(GRAY)
 pygame.display.update()
 
 
-def _draw_message(msg, window=WINDOW, rect=LAYOUT['message_rect']):
-    window.fill(BLACK, rect)
-    text_surface_obj = FONT.render('-- {} --'.format(msg), True, WHITE, BLACK)
-    window.blit(text_surface_obj, rect)
+# def _draw_message(msg, window=WINDOW, rect=LAYOUT['message_rect']):
+#     window.fill(BLACK, rect)
+#     text_surface_obj = FONT.render('-- {} --'.format(msg), True, WHITE, BLACK)
+#     window.blit(text_surface_obj, rect)
 
 
 def _frame():
@@ -40,11 +40,14 @@ def _frame():
     return (fno, frame)
 
 
-def _draw_image(frame, patch, window=WINDOW):
-    window.blit(frame, patch['corner'])
+def _draw_image(frame, patch):
+    # WINDOW.blit(frame, patch['corner'], patch['corner'] + patch['size'])
+    frame = pygame.transform.scale(frame, patch['size'])
+    WINDOW.blit(frame, patch['corner'])
 
 
 update_rect = [
+    LAYOUT['center_patch']['corner'] + LAYOUT['center_patch']['size'],
     LAYOUT['left_patch']['corner'] + LAYOUT['left_patch']['size'],
     LAYOUT['right_patch']['corner'] + LAYOUT['right_patch']['size'],
 ]

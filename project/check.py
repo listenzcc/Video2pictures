@@ -30,18 +30,12 @@ table
 
 # %%
 _table = table.copy()
-_table['color'] = table['fno1'].map(lambda x: str(x))
-fig = px.scatter(_table, y='delay', color='color', title='Left panel')
+_table['color'] = table['uid'].map(lambda x: str(x))
+fig = px.scatter(_table, y='delay', color='color', title='Scatter')
 fig.show()
 
 # %%
-_table = table.copy()
-_table['color'] = table['fno2'].map(lambda x: str(x))
-fig = px.scatter(_table, y='delay', color='color', title='Right panel')
-fig.show()
-
-# %%
-fig = px.box(_table, y='delay', title='Both panels')
+fig = px.box(_table, y='delay', title='Box')
 fig.show()
 
 # %%
