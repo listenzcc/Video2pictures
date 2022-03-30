@@ -25,7 +25,6 @@ delay = np.array(table['time'])[1:] - np.array(table['time'])[:-1]
 delay = np.concatenate([[0.1], delay])
 
 table['delay'] = delay - 0.1
-
 table
 
 # %%
@@ -36,6 +35,10 @@ fig.show()
 
 # %%
 fig = px.box(_table, y='delay', title='Box')
+fig.show()
+
+# %%
+fig = px.histogram(_table, x='delay', title='Hist')
 fig.show()
 
 # %%

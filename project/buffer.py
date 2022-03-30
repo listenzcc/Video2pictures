@@ -25,26 +25,27 @@ class Buffer(object):
         self.queue = queue.Queue(maxsize=int(CFG['buffer']['maxSize']))
         LOGGER.info('Buffer initialized: {}'.format(self.queue.maxsize))
 
-    def append(self, array, uid=-1):
+    def append(self, content, uid=-3):
         '''Append new item,
 
         Args:
             - uid: The Unique ID of the image;
-            - array: The width x height x 3 sized uint8 array as an array;
+            - content: The width x height x 3 sized uint8 array as an image,
+                       or the list of two arrays.
 
         Returns:
             - success, pid, array
         '''
 
         try:
-            self.queue.put_nowait((uid, array))
-            return True, uid, array
+            self.queue.put_nowait((uid, content))
+            return True, uid, content
         except queue.Full:
             pass
 
         LOGGER.warning('Buffer is full: {}'.format(self.queue.maxsize))
 
-        return False, uid, array
+        return False, uid, content
 
     def get_nowait(self):
         try:

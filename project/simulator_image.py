@@ -8,6 +8,7 @@ Purpose:
 # %%
 import os
 import cv2
+import sys
 import socket
 
 from tqdm.auto import tqdm
@@ -67,6 +68,13 @@ serverHost = '192.168.31.38'
 # serverHost = 'localhost'
 serverPort = 9386
 
+argv = sys.argv[1:]
+if len(argv) == 0:
+    argv.append('single')
+
+if argv[0] not in ['single', 'dual']:
+    argv[0] = 'single'
+
 
 class TCPClient(object):
     def __init__(self):
@@ -85,9 +93,18 @@ class TCPClient(object):
 
         # input('Enter to start')
         for _ in tqdm(range(10000)):
-            buff = _mk_package(_frame2bytes(_read_frame()), _tmp_count[0])
-            # print(buff[:15])
-            # print(int.from_bytes(buff[5:15], 'little'))
+            uid = _tmp_count[0]
+            if argv[0] == 'single':
+                buff = _mk_package(_frame2bytes(_read_frame()),
+                                   uid=uid)
+
+            if argv[0] == 'dual':
+                buff = _mk_package([
+                    _frame2bytes(_read_frame()),
+                    _frame2bytes(_read_frame())
+                ],
+                    uid=uid)
+
             self.socket.send(buff)
 
         self.socket.close()
