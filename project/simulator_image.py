@@ -63,9 +63,9 @@ def _mk_package(frame_bytes, uid=0, uid_length=16, n_length=16, byteorder='littl
 
 
 # %%
-serverHost = '100.1.1.108'
-serverHost = '192.168.31.38'
-# serverHost = 'localhost'
+# serverHost = '100.1.1.108'
+# serverHost = '192.168.31.38'
+serverHost = 'localhost'
 serverPort = 9386
 
 argv = sys.argv[1:]

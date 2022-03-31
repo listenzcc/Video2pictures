@@ -19,12 +19,13 @@ file_name = csv_files[-1].name
 table = pd.read_csv(file_path, index_col=0)
 table = table.iloc[5:]
 
-
 # %%
 delay = np.array(table['time'])[1:] - np.array(table['time'])[:-1]
 delay = np.concatenate([[0.1], delay])
+delay -= 0.1
+delay[np.abs(delay) >= 0.1] = 0
 
-table['delay'] = delay - 0.1
+table['delay'] = delay
 table
 
 # %%

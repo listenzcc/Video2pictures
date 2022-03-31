@@ -22,6 +22,38 @@ def _default_img():
 
 class Buffer(object):
     def __init__(self):
+        self.lst = []
+        self.queue = queue.Queue()
+        LOGGER.info('Buffer initialized: {}'.format(self.queue.maxsize))
+
+    def append(self, content, uid=-3):
+        '''Append new item,
+
+        Args:
+            - uid: The Unique ID of the image;
+            - content: The width x height x 3 sized uint8 array as an image,
+                       or the list of two arrays.
+
+        Returns:
+            - success, pid, array
+        '''
+
+        self.lst.append((uid, content))
+        return True, uid, content
+
+    def get_nowait(self):
+        if len(self.lst) == 0:
+            return (-2, _default_img())
+        return self.lst.pop(0)
+
+        try:
+            return self.queue.get_nowait()
+        except queue.Empty:
+            return (-2, _default_img())
+
+
+class Buffer1(object):
+    def __init__(self):
         self.queue = queue.Queue(maxsize=int(CFG['buffer']['maxSize']))
         LOGGER.info('Buffer initialized: {}'.format(self.queue.maxsize))
 
@@ -48,6 +80,7 @@ class Buffer(object):
         return False, uid, content
 
     def get_nowait(self):
+
         try:
             return self.queue.get_nowait()
         except queue.Empty:

@@ -13,22 +13,23 @@ import threading
 # %%
 
 cmd_dict = dict(
-    single=b'command-single',
-    dual=b'command-dual',
-    stop=b'command-stop'
+    single=['command-single', '[S]ingle'],
+    dual=['command-dual', '[D]ual'],
+    stop=['command-stop', 's[T]op'],
+    close=['command-close', '[C]lose'],
 )
 
 
 def _mk_package(cmd):
     assert(cmd in cmd_dict)
-    bytes = cmd_dict[cmd]
-    return bytes
+    _bytes = bytes(cmd_dict[cmd][0], encoding='utf8')
+    return _bytes
 
 
 # %%
-serverHost = '100.1.1.108'
-serverHost = '192.168.31.38'
-# serverHost = 'localhost'
+# serverHost = '100.1.1.108'
+# serverHost = '192.168.31.38'
+serverHost = 'localhost'
 serverPort = 9386
 
 
@@ -39,7 +40,7 @@ class TCPClient(object):
 
     def _listen(self):
         while True:
-            print(self.socket.recv(1024))
+            print('<<', self.socket.recv(1024))
 
     def start(self):
         host = serverHost
@@ -53,10 +54,15 @@ class TCPClient(object):
 
         while True:
             inp = input('>> ')
+
             if inp == 'q':
                 break
 
-            if inp == 'p':
+            if inp == '':
+                for e in cmd_dict:
+                    print(e, cmd_dict[e])
+
+            if inp == 't':
                 self.socket.send(_mk_package('stop'))
                 continue
 
@@ -66,6 +72,10 @@ class TCPClient(object):
 
             if inp == 'd':
                 self.socket.send(_mk_package('dual'))
+                continue
+
+            if inp == 'c':
+                self.socket.send(_mk_package('close'))
                 continue
 
             self.socket.send(bytes(inp, 'utf8'))

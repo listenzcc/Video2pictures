@@ -6,13 +6,16 @@ Purpose: Displayer of RSVP controlled by online commands
 '''
 
 # %%
-from re import L
+
+import parallel
+
 import time
 import pygame
 
 import socket
 import threading
 import numpy as np
+
 
 from timer import Timer
 from buffer import BUFFER
@@ -69,6 +72,13 @@ class IncomeClient(object):
         while True:
             try:
                 recv = self.client.recv(1024)
+
+                if recv == b'command-close':
+                    self.client.send(_bytes('OK') + recv)
+                    DISPLAYER.timer_save()
+                    DISPLAYER.set_status('idle')
+                    DISPLAYER.alive = False
+                    continue
 
                 if recv == b'command-stop':
                     DISPLAYER.set_status('idle')
@@ -152,10 +162,10 @@ class IncomeClient(object):
                     self.client, self.addr))
                 break
 
-            if recv == b'':
-                LOGGER.error('Connection closed {}, {}'.format(
-                    self.client, self.addr))
-                break
+            # if recv == b'':
+            #     LOGGER.error('Connection closed {}, {}'.format(
+            #         self.client, self.addr))
+            #     break
 
             # print('<<', recv)
 
@@ -259,6 +269,7 @@ update_rect = [
 
 class Displayer(object):
     def __init__(self):
+        Displayer.alive = True
         self.timer = Timer()
         self.status = 'idle'
         self.valid_status = dict(
@@ -307,17 +318,27 @@ DISPLAYER = Displayer()
 # %%
 SERVER.serve()
 
-while True:
+parallel_port_address = int(CFG['ParallelPort']['address'], 16)
+print(parallel_port_address)
+use_parallel_port = False
+if parallel_port_address > 0:
+    use_parallel_port = True
+    parallel.setPortAddress(parallel_port_address)
+    parallel.setData(0)
+
+
+while DISPLAYER.alive:
     mode = DISPLAYER.get_status()
     if mode in ['single', 'dual']:
         if DISPLAYER.timer.check() * 10 < DISPLAYER.count:
+            if use_parallel_port:
+                parallel.setData(0)
+
             events = [e for e in pygame.event.get()]
             # print(time.time(), BUFFER.queue.qsize(), events)
 
             if any([e.type == pygame.QUIT for e in events]):
                 DISPLAYER.timer_save()
-                # DISPLAYER.timer.save(folder='timings',
-                #                      contents_name=['uid', 'mode'])
                 QUIT_PYGAME()
                 pass
 
@@ -331,11 +352,23 @@ while True:
 
         uid = -1
         if mode == 'single' and len(DISPLAYER.lst) == 1:
+            if len(DISPLAYER.lst[0]) != 2:
+                continue
             uid, frame = DISPLAYER.lst.pop()
+
+            if use_parallel_port:
+                parallel.setData(max(0, int(uid)))
+
             _draw_frame_single(frame, LAYOUT['center_patch'])
 
         if mode == 'dual' and len(DISPLAYER.lst) == 1:
+            if len(DISPLAYER.lst[0]) != 3:
+                continue
             uid, frame1, frame2 = DISPLAYER.lst.pop()
+
+            if use_parallel_port:
+                parallel.setData(max(0, int(uid)))
+
             _draw_frame_dual(frame1, frame2,
                              LAYOUT['left_patch'], LAYOUT['right_patch'])
 
@@ -343,6 +376,20 @@ while True:
         DISPLAYER.timer.append([uid, mode])
         DISPLAYER.count += 1
 
+    else:
+        events = [e for e in pygame.event.get()]
+        # print(time.time(), BUFFER.queue.qsize(), events)
+
+        if any([e.type == pygame.QUIT for e in events]):
+            DISPLAYER.timer_save()
+            if use_parallel_port:
+                parallel.setData(0)
+            QUIT_PYGAME()
+            pass
+
+if use_parallel_port:
+    parallel.setData(0)
+QUIT_PYGAME()
 
 input('Enter to escape.')
 

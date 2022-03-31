@@ -47,11 +47,14 @@ class Timer(object):
     def save(self,
              contents_name=[],
              folder='.',
-             filename='{}.csv'.format(time.ctime().replace(':', '-'))
+             filename=None,
              ):
         '''
         Save the records
         '''
+        if filename is None:
+            filename = '{}.csv'.format(time.ctime().replace(':', '-'))
+
         columns = ['time'] + contents_name
         csv = Path(folder, filename)
         self.table = pd.DataFrame(self.lst, columns=columns)
