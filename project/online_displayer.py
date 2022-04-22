@@ -39,6 +39,7 @@ def _append(uid, body):
     if isinstance(body, list):
         img1 = _pic_decoder(body[0])
         img2 = _pic_decoder(body[1])
+        print(img1.shape, img2.shape)
         if img1 is None or img2 is None:
             return -1
         BUFFER.append([np.rot90(img1), np.rot90(img2)], uid)

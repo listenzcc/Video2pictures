@@ -155,7 +155,7 @@ def setPortAddress(address=0x0378):
     try:
         PORT = ParallelPort(address=address)
     except Exception as exp:
-        logging.warning('Could not initiate port: %s' % str(exp))
+        # logging.warning('Could not initiate port: %s' % str(exp))
         PORT = None
 
 
