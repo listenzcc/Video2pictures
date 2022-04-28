@@ -9,7 +9,9 @@ from pathlib import Path
 # %%
 folder = Path('timings')
 csv_files = [e for e in folder.iterdir() if e.as_posix().endswith('.csv')]
-csv_files
+csv_files = sorted(csv_files, key=lambda e: e.stat().st_mtime, reverse=True)
+csv_files[:3]
+
 
 # %%
 file_path = csv_files[-1].as_posix()

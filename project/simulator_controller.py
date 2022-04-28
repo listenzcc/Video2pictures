@@ -27,8 +27,7 @@ def _mk_package(cmd):
 
 
 # %%
-# serverHost = '100.1.1.108'
-# serverHost = '192.168.31.38'
+# serverHost = '100.1.1.100'
 serverHost = 'localhost'
 serverPort = 9386
 

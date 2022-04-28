@@ -17,7 +17,7 @@ from toolbox import _pic_encoder
 from pathlib import Path
 
 # %%
-file_path = Path(os.environ.get('home', None), 'Desktop', 'nba.mp4')
+file_path = Path(os.environ.get('home', None), 'Desktop', 'video.mp4')
 
 # !!! The CAPTURE is not closed well in the script.
 CAPTURE = cv2.VideoCapture(file_path.as_posix())
@@ -63,7 +63,7 @@ def _mk_package(frame_bytes, uid=0, uid_length=16, n_length=16, byteorder='littl
 
 
 # %%
-# serverHost = '100.1.1.108'
+# serverHost = '100.1.1.100'
 # serverHost = '192.168.31.38'
 serverHost = 'localhost'
 serverPort = 9386
